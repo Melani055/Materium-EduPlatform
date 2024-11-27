@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "970146405739",
+    "project_id": "materium-de9c9",
+    "storage_bucket": "materium-de9c9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:970146405739:android:5f697dce9cda89094b002e",
+        "android_client_info": {
+          "package_name": "com.materium_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "970146405739-55jq61m2je7hrjna5bbg6iri8o9mpmd2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdceYl1-eULSCMZXt5stxpvzmYqOUHOh0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "970146405739-55jq61m2je7hrjna5bbg6iri8o9mpmd2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
