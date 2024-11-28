@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'JurnalPage.dart';
 import 'ProfilePage.dart';
 import 'ForumPage.dart';
+import 'DetailMateri.dart';
 
 class HomePage extends StatefulWidget {
   final String email;
@@ -18,6 +19,10 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   int _themeIndex = 1;
   String userName = "Loading...";
+  String searchQuery = ""; // Variabel untuk menyimpan query pencarian
+  List<QueryDocumentSnapshot> searchResults = []; // Untuk menyimpan hasil pencarian
+
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -25,6 +30,7 @@ class _HomePageState extends State<HomePage> {
     _fetchUserName();
   }
 
+  // Fungsi untuk mengambil nama pengguna berdasarkan email
   Future<void> _fetchUserName() async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -48,6 +54,47 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Fungsi pencarian dengan query Firestore
+  Future<void> _search() async {
+    setState(() {
+      searchQuery = _searchController.text;
+    });
+
+    if (searchQuery.isNotEmpty) {
+      try {
+        final results = await FirebaseFirestore.instance
+            .collection('materials')
+            .where('judul', isGreaterThanOrEqualTo: searchQuery)
+            .where('judul', isLessThanOrEqualTo: searchQuery + '\uf8ff')
+            .where('user_email', isEqualTo: widget.email)  // Menambahkan filter email
+            .get();
+
+        setState(() {
+          searchResults = results.docs;
+        });
+
+        // Menampilkan hasil pencarian di log
+        if (results.docs.isEmpty) {
+          print("No results found");
+        } else {
+          results.docs.forEach((doc) {
+            print("Found material: ${doc['judul']}");
+          });
+        }
+      } catch (e) {
+        print("Error fetching search results: $e");
+        setState(() {
+          searchResults = [];
+        });
+      }
+    } else {
+      setState(() {
+        searchResults = [];
+      });
+    }
+  }
+
+  // Fungsi untuk mengganti tema
   void _changeTheme(int index) {
     setState(() {
       _themeIndex = index;
@@ -61,6 +108,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Fungsi untuk mengatur bottom navigation
   void _onItemTapped(int index) {
     if (index != _selectedIndex) {
       setState(() {
@@ -150,6 +198,7 @@ class _HomePageState extends State<HomePage> {
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: TextField(
+                  controller: _searchController,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
                     hintText: "Search...",
@@ -161,7 +210,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: _search, // Pencarian dilakukan saat tombol di klik
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                 ),
@@ -170,6 +219,45 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(color: Colors.white),
                 ),
               ),
+              const SizedBox(height: 20),
+              // Menampilkan hasil pencarian
+              Expanded(
+                child: ListView.builder(
+                  itemCount: searchResults.length,
+                  itemBuilder: (context, index) {
+                    var material = searchResults[index];
+                    return Card(
+                      margin: const EdgeInsets.all(10),
+                      child: ListTile(
+                        title: Text(material['judul']),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Author: ${material['author']}"),
+                            Text("Kategori: ${material['kategori']}"),
+                            Text("${material['konten']}"),
+                          ],
+                        ),
+                        onTap: () {
+                          // Navigasi ke halaman DetailMateri dan mengirimkan data
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetailMateri(
+                                judul: material['judul'],
+                                konten: material['konten'],
+                                author: material['author'],
+                                kategori: material['kategori'],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              )
+
             ],
           ),
         ),
@@ -201,3 +289,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+

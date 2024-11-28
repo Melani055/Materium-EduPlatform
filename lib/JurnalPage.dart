@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ProfilePage.dart';
 import 'HomePage.dart';
 import 'ForumPage.dart';
+import 'DetailMateri.dart';
 
 class JurnalPage extends StatefulWidget {
   final String email;
@@ -15,26 +16,27 @@ class JurnalPage extends StatefulWidget {
 
 class _JurnalPageState extends State<JurnalPage> {
   ThemeMode _themeMode = ThemeMode.system;
-  int _themeIndex = 1; // 0 = Dark, 1 = System, 2 = Light
-  int _selectedIndex = 1; // Indeks untuk tab Jurnal
+  int _themeIndex = 1;
+  int _selectedIndex = 1;
   String userName = "Loading...";
+  List<Map<String, dynamic>> materials = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _fetchUserName();
+    _fetchMaterials();
   }
 
   void _changeTheme(int index) {
     setState(() {
       _themeIndex = index;
-      if (index == 0) {
-        _themeMode = ThemeMode.dark;
-      } else if (index == 1) {
-        _themeMode = ThemeMode.system;
-      } else if (index == 2) {
-        _themeMode = ThemeMode.light;
-      }
+      _themeMode = (index == 0)
+          ? ThemeMode.dark
+          : (index == 2)
+          ? ThemeMode.light
+          : ThemeMode.system;
     });
   }
 
@@ -57,6 +59,27 @@ class _JurnalPageState extends State<JurnalPage> {
     } catch (e) {
       setState(() {
         userName = "Error fetching name";
+      });
+    }
+  }
+
+  Future<void> _fetchMaterials() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('materials')
+          .where('user_email', isEqualTo: widget.email)
+          .get();
+      final data = snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+      setState(() {
+        materials = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        materials = [];
+        isLoading = false;
       });
     }
   }
@@ -130,14 +153,77 @@ class _JurnalPageState extends State<JurnalPage> {
             ),
           ],
         ),
-        body: Center(
-          child: Text(
-            'Materi Page for ${widget.email}',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+        body: isLoading
+            ? const Center(
+          child: CircularProgressIndicator(),
+        )
+            : Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Materi Terbaru',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
             ),
-          ),
+            Expanded(
+              child: materials.isEmpty
+                  ? const Center(
+                child: Text('No materials found.'),
+              )
+                  : ListView.builder(
+                itemCount: materials.length,
+                itemBuilder: (context, index) {
+                  final material = materials[index];
+                  final title = material['judul'] ?? 'No Title';
+                  final author = material['author'] ?? 'Unknown Author';
+                  final kategori =
+                      material['kategori'] ?? 'Uncategorized';
+                  final konten = material['konten'] ?? '';
+                  final snippet = konten.length > 100
+                      ? '${konten.substring(0, 100)}...'
+                      : konten;
+
+                  return Card(
+                    margin: const EdgeInsets.all(10),
+                    child: ListTile(
+                      title: Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Author: $author'),
+                          Text('Kategori: $kategori'),
+                          Text('$snippet'),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailMateri(
+                              judul: title,
+                              konten: konten,
+                              author: author,
+                              kategori: kategori,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
