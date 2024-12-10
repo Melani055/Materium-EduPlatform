@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'GroupChatPage.dart';
 import 'HomePage.dart';
 import 'JurnalPage.dart';
 import 'ProfilePage.dart';
 
 class ForumPage extends StatefulWidget {
-  final String email; // Email pengguna yang sedang login
+  final String email;
 
   const ForumPage({Key? key, required this.email}) : super(key: key);
 
@@ -14,9 +16,7 @@ class ForumPage extends StatefulWidget {
 }
 
 class _ForumPageState extends State<ForumPage> {
-  ThemeMode _themeMode = ThemeMode.system;
-  int _themeIndex = 1; // 0 = Dark, 1 = System, 2 = Light
-  int _selectedIndex = 2; // Menentukan tab aktif pada bottom bar (2 = Forum)
+  int _selectedIndex = 2;
   String userName = "Loading...";
 
   @override
@@ -43,29 +43,18 @@ class _ForumPageState extends State<ForumPage> {
       }
     } catch (e) {
       setState(() {
-        userName = "Error fetching name";
+        userName = "Error fetching name: $e";
       });
     }
   }
 
-  void _changeTheme(int index) {
-    setState(() {
-      _themeIndex = index;
-      if (index == 0) {
-        _themeMode = ThemeMode.dark;
-      } else if (index == 1) {
-        _themeMode = ThemeMode.system;
-      } else if (index == 2) {
-        _themeMode = ThemeMode.light;
-      }
-    });
-  }
-
-  void _onBottomNavTap(int index) {
+  void _onItemTapped(int index) {
     if (index != _selectedIndex) {
       setState(() {
         _selectedIndex = index;
       });
+
+      // Navigasi halaman sesuai indeks
       if (index == 0) {
         Navigator.pushReplacement(
           context,
@@ -76,11 +65,6 @@ class _ForumPageState extends State<ForumPage> {
           context,
           MaterialPageRoute(builder: (context) => JurnalPage(email: widget.email)),
         );
-      } else if (index == 2) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ForumPage(email: widget.email)),
-        );
       } else if (index == 3) {
         Navigator.pushReplacement(
           context,
@@ -90,95 +74,142 @@ class _ForumPageState extends State<ForumPage> {
     }
   }
 
+  // Fungsi untuk menampilkan pop-up dialog untuk memasukkan nama grup
+  void _showCreateGroupDialog() {
+    final _groupNameController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter Group Name'),
+          content: TextField(
+            controller: _groupNameController,
+            decoration: const InputDecoration(hintText: 'Group Name'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Menutup dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                String groupName = _groupNameController.text;
+                if (groupName.isNotEmpty) {
+                  _createGroup(groupName);
+                  Navigator.of(context).pop(); // Menutup dialog setelah membuat grup
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Fungsi untuk membuat grup baru di Firestore
+  // Fungsi untuk membuat grup baru di Firestore
+  void _createGroup(String groupName) async {
+    try {
+      // Membuat grup dengan ID otomatis yang dihasilkan Firestore
+      DocumentReference groupRef = await FirebaseFirestore.instance.collection('groups').add({
+        'name': groupName,
+        'admin': widget.email,
+        'anggota': [widget.email], // Menambahkan email pengguna sebagai anggota grup
+      });
+
+      // Menambahkan ID grup yang dihasilkan oleh Firestore
+      await groupRef.update({
+        'id': groupRef.id, // Menyimpan ID grup yang dihasilkan
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Group "$groupName" created successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error creating group: $e')),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
-      themeMode: _themeMode,
+      themeMode: ThemeMode.system,
       home: Scaffold(
         appBar: AppBar(
-          title: Text(
-            userName,
-            style: const TextStyle(color: Colors.blue),
-          ),
-          actions: [
-            Container(
-              margin: const EdgeInsets.only(right: 10),
-              child: ToggleButtons(
-                borderRadius: BorderRadius.circular(20),
-                borderWidth: 1.5,
-                selectedBorderColor: Colors.blue,
-                borderColor: Colors.grey,
-                color: Colors.grey,
-                selectedColor: Colors.blue,
-                isSelected: [
-                  _themeIndex == 0,
-                  _themeIndex == 1,
-                  _themeIndex == 2,
-                ],
-                onPressed: (index) {
-                  _changeTheme(index);
-                },
-                children: const [
-                  Icon(Icons.dark_mode), // Dark Mode
-                  Icon(Icons.settings),  // System Default
-                  Icon(Icons.light_mode), // Light Mode
-                ],
-              ),
-            ),
-          ],
+          title: Text(userName, style: const TextStyle(color: Colors.blue)),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                'Forum Diskusi',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 20),
-              ListTile(
-                leading: Icon(Icons.question_answer, color: Colors.blue),
-                title: Text("Topik 1"),
-                subtitle: Text("Diskusi tentang topik 1..."),
-                onTap: null,
-              ),
-              Divider(),
-              ListTile(
-                leading: Icon(Icons.question_answer, color: Colors.blue),
-                title: Text("Topik 2"),
-                subtitle: Text("Diskusi tentang topik 2..."),
-                onTap: null,
-              ),
-            ],
-          ),
+        body: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('groups')
+              .where('anggota', arrayContains: widget.email)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            }
+            final groups = snapshot.data?.docs ?? [];
+            if (groups.isEmpty) {
+              return const Center(child: Text("No groups found"));
+            }
+            return ListView.builder(
+              itemCount: groups.length,
+              itemBuilder: (context, index) {
+                final group = groups[index];
+                return ListTile(
+                  title: Text(group['name']),
+                  subtitle: Text("Admin: ${group['admin']}"),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => GroupChatPage(
+                        groupId: group['id'],
+                        groupName: group['name'],
+                        email: widget.email,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showCreateGroupDialog, // Menampilkan pop-up saat tombol ditekan
+          child: const Icon(Icons.add),
+          backgroundColor: Colors.blue,
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
-          onTap: _onBottomNavTap,
+          onTap: _onItemTapped,
           selectedItemColor: Colors.blue,
           unselectedItemColor: Colors.grey,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
-              label: "Home",
+              label: 'Home',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.book),
-              label: "Mater",
+              label: 'Materi',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.forum),
-              label: "Forum",
+              label: 'Forum',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person),
-              label: "Profile",
+              label: 'Profile',
             ),
           ],
         ),

@@ -55,6 +55,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Fungsi pencarian dengan query Firestore
+// Fungsi pencarian dengan query Firestore
   Future<void> _search() async {
     setState(() {
       searchQuery = _searchController.text;
@@ -62,12 +63,12 @@ class _HomePageState extends State<HomePage> {
 
     if (searchQuery.isNotEmpty) {
       try {
+        // Menghapus filter berdasarkan email user agar bisa mencari materi dari semua user
         final results = await FirebaseFirestore.instance
             .collection('materials')
             .where('judul', isGreaterThanOrEqualTo: searchQuery)
             .where('judul', isLessThanOrEqualTo: searchQuery + '\uf8ff')
-            .where('user_email', isEqualTo: widget.email)  // Menambahkan filter email
-            .get();
+            .get(); // Mengambil semua materi tanpa filter email
 
         setState(() {
           searchResults = results.docs;
@@ -93,6 +94,7 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
+
 
   // Fungsi untuk mengganti tema
   void _changeTheme(int index) {

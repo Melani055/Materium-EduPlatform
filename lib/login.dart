@@ -18,8 +18,8 @@ class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
 
   // Nilai default untuk email dan password
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
+  TextEditingController emailController = TextEditingController(text: "ardi@ardi.com");
+  TextEditingController passwordController = TextEditingController(text: "Ardi1410");
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   ThemeMode _themeMode = ThemeMode.system;
@@ -228,7 +228,7 @@ class _LoginState extends State<Login> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const RegisterPage()),
+                            builder: (context) => RegisterPage()),
                       );
                     },
                     child: const Text(

@@ -67,8 +67,7 @@ class _JurnalPageState extends State<JurnalPage> {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('materials')
-          .where('user_email', isEqualTo: widget.email)
-          .get();
+          .get(); // Mengambil semua materi tanpa filter berdasarkan email
       final data = snapshot.docs
           .map((doc) => doc.data() as Map<String, dynamic>)
           .toList();
@@ -83,6 +82,7 @@ class _JurnalPageState extends State<JurnalPage> {
       });
     }
   }
+
 
   void _onItemTapped(int index) {
     if (index != _selectedIndex) {
