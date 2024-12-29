@@ -105,13 +105,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 _buildTextField(
                   emailController,
                   "Email",
-                  hintText: "Masukkan email Anda",
+                 //hintText: "Masukkan email Anda",
                 ),
                 _buildTextField(
                   passwordController,
                   "Password",
                   obscureText: _obscurePassword,
-                  hintText: "Masukkan password Anda",
+                  //hintText: "Masukkan password Anda",
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
