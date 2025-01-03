@@ -17,14 +17,13 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
 
+  // Nilai default untuk email dan password
   TextEditingController emailController = TextEditingController(text: "ardi@ardi.com");
   TextEditingController passwordController = TextEditingController(text: "Ardi1410");
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   ThemeMode _themeMode = ThemeMode.system;
-  int _themeIndex = 1;
-
-  bool _obscurePassword = true; // Menyembunyikan password secara default
+  int _themeIndex = 1; // 0 = Dark, 1 = System, 2 = Light
 
   Future<void> _loginWithEmailPassword() async {
     try {
@@ -92,9 +91,9 @@ class _LoginState extends State<Login> {
             'Materium App',
             style: GoogleFonts.montserrat(
               textStyle: const TextStyle(
-                fontSize: 20,
-                color: Colors.blue,
-                fontWeight: FontWeight.bold,
+                fontSize: 20, // Ukuran font
+                color: Colors.blue, // Warna biru
+                fontWeight: FontWeight.bold, // Bobot font (opsional)
               ),
             ),
           ),
@@ -117,9 +116,9 @@ class _LoginState extends State<Login> {
                   _changeTheme(index);
                 },
                 children: const [
-                  Icon(Icons.dark_mode),
-                  Icon(Icons.settings),
-                  Icon(Icons.light_mode),
+                  Icon(Icons.dark_mode), // Dark Mode
+                  Icon(Icons.settings),  // System Default
+                  Icon(Icons.light_mode), // Light Mode
                 ],
               ),
             ),
@@ -133,7 +132,7 @@ class _LoginState extends State<Login> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/images/logo.png',
+                  'assets/images/logo.png', // Ganti dengan path gambar Anda
                   width: 100,
                   height: 100,
                 ),
@@ -164,29 +163,16 @@ class _LoginState extends State<Login> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                   child: TextFormField(
                     controller: passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
+                    obscureText: true,
+                    decoration: const InputDecoration(
                       labelText: "Password",
-                      labelStyle: const TextStyle(color: Colors.blue),
-                      border: const OutlineInputBorder(),
-                      enabledBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.blue, width: 2.0),
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.blue, width: 2.0),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.blue,
+                      labelStyle: TextStyle(color: Colors.blue),
+                      border: OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.blue, width: 2.0),
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blue, width: 2.0),
                       ),
                     ),
                     validator: (value) {
@@ -242,7 +228,7 @@ class _LoginState extends State<Login> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const RegisterPage()),
+                            builder: (context) => RegisterPage()),
                       );
                     },
                     child: const Text(

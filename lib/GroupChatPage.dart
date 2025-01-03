@@ -23,18 +23,25 @@ class GroupChatPage extends StatelessWidget {
       if (message.isNotEmpty) {
         User? user = FirebaseAuth.instance.currentUser;
         if (user == null) {
-          // Pengguna belum login
-          // Anda bisa memberi tahu pengguna untuk login terlebih dahulu
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('You need to log in first.')),
+          );
           return;
         }
 
-        await FirebaseFirestore.instance.collection('messages').add({
-          'groupId': groupId,
-          'sender': user.email,
-          'message': message,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-        messageController.clear();
+        try {
+          await FirebaseFirestore.instance.collection('messages').add({
+            'groupId': groupId,
+            'sender': user.email,
+            'message': message,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+          messageController.clear();
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to send message.')),
+          );
+        }
       }
     }
 
@@ -45,13 +52,13 @@ class GroupChatPage extends StatelessWidget {
           TextEditingController newMemberController = TextEditingController();
 
           return AlertDialog(
-            title: Text('Tambah Anggota ke $groupName'),
+            title: Text('Add Member to $groupName'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: newMemberController,
-                  decoration: InputDecoration(hintText: 'Email Anggota Baru'),
+                  decoration: InputDecoration(hintText: 'New Member Email'),
                 ),
                 SizedBox(height: 10),
                 ElevatedButton(
@@ -59,32 +66,25 @@ class GroupChatPage extends StatelessWidget {
                     final newMemberEmail = newMemberController.text.trim();
                     if (newMemberEmail.isNotEmpty) {
                       try {
-                        // Menambahkan anggota baru ke dalam group
-                        await FirebaseFirestore.instance.collection('groups').doc(groupId).update({
+                        await FirebaseFirestore.instance
+                            .collection('groups')
+                            .doc(groupId)
+                            .update({
                           'anggota': FieldValue.arrayUnion([newMemberEmail]),
                         });
-
-                        // Tutup dialog terlebih dahulu
                         Navigator.of(context).pop();
-
-                        // Tunggu frame berikutnya untuk menampilkan SnackBar
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Anggota berhasil ditambahkan')),
-                          );
-                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Member added successfully.')),
+                        );
                       } catch (e) {
-                        // Menampilkan pesan error jika gagal
                         Navigator.of(context).pop();
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Gagal menambahkan anggota')),
-                          );
-                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to add member.')),
+                        );
                       }
                     }
                   },
-                  child: Text('Tambah Anggota'),
+                  child: Text('Add Member'),
                 ),
               ],
             ),
@@ -105,11 +105,13 @@ class GroupChatPage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Menampilkan jumlah anggota di bawah judul grup
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance.collection('groups').doc(groupId).snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('groups')
+                  .doc(groupId)
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -121,7 +123,7 @@ class GroupChatPage extends StatelessWidget {
                 final groupData = snapshot.data!;
                 final members = List<String>.from(groupData['anggota'] ?? []);
                 return Text(
-                  '${members.length} Anggota',
+                  '${members.length} Members',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 );
               },
@@ -138,24 +140,22 @@ class GroupChatPage extends StatelessWidget {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(child: Text('No messages yet.'));
                 }
 
-                // Log snapshot data untuk debugging
-                print("Snapshot data: ${snapshot.data!.docs}");
-
                 final messages = snapshot.data!.docs;
-                print("Messages: $messages"); // Debugging output
 
                 return ListView.builder(
                   reverse: true,
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    print("Message $index: ${message.data()}"); // Menampilkan setiap message
-
                     final timestamp = (message['timestamp'] as Timestamp).toDate();
+
                     return Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Align(
@@ -201,8 +201,7 @@ class GroupChatPage extends StatelessWidget {
                   },
                 );
               },
-            )
-
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
