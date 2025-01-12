@@ -14,6 +14,37 @@ class GroupChatPage extends StatelessWidget {
     required this.email,
   }) : super(key: key);
 
+  void _showGroupMembers(BuildContext context) async {
+    DocumentSnapshot groupDoc = await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(groupId)
+        .get();
+    List<String> members = List<String>.from(groupDoc['anggota'] ?? []);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Members of $groupName'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: members.map((member) {
+              return ListTile(
+                title: Text(member),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final messageController = TextEditingController();
@@ -93,10 +124,58 @@ class GroupChatPage extends StatelessWidget {
       );
     }
 
+    Future<void> _leaveGroup() async {
+      try {
+        await FirebaseFirestore.instance.collection('groups').doc(groupId).update({
+          'anggota': FieldValue.arrayRemove([email]),
+        });
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You have left the group.')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to leave group.')),
+        );
+      }
+    }
+
+    Future<void> _confirmLeaveGroup() async {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Leave Group'),
+            content: Text('Are you sure you want to leave the group?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _leaveGroup();
+                },
+                child: Text('Leave'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(groupName),
+        title: GestureDetector(
+          onTap: () => _showGroupMembers(context),
+          child: Text(groupName),
+        ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.exit_to_app),
+            onPressed: _confirmLeaveGroup,
+          ),
           IconButton(
             icon: Icon(Icons.add),
             onPressed: _addMember,
@@ -154,7 +233,7 @@ class GroupChatPage extends StatelessWidget {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final timestamp = (message['timestamp'] as Timestamp).toDate();
+                    final timestamp = (message['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
 
                     return Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -167,32 +246,61 @@ class GroupChatPage extends StatelessWidget {
                               ? CrossAxisAlignment.end
                               : CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              message['sender'],
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 4),
-                            Container(
-                              padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: message['sender'] == email
-                                    ? Colors.blue
-                                    : Colors.grey[300],
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                message['message'],
-                                style: TextStyle(
-                                  color: message['sender'] == email
-                                      ? Colors.white
-                                      : Colors.black,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (message['sender'] == email)
+                                  IconButton(
+                                    icon: Icon(Icons.delete),
+                                    onPressed: () async {
+                                      try {
+                                        await FirebaseFirestore.instance
+                                            .collection('messages')
+                                            .doc(message.id)
+                                            .delete();
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Message deleted.')),
+                                        );
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Failed to delete message.')),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      message['sender'] ?? 'Unknown',
+                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Container(
+                                      padding: EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: message['sender'] == email
+                                            ? Colors.blue
+                                            : Colors.grey[300],
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        message['message'] ?? '',
+                                        style: TextStyle(
+                                          color: message['sender'] == email
+                                              ? Colors.white
+                                              : Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      '${timestamp.hour}:${timestamp.minute}',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              '${timestamp.hour}:${timestamp.minute}',
-                              style: TextStyle(fontSize: 12),
+                              ],
                             ),
                           ],
                         ),

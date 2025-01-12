@@ -21,30 +21,32 @@ class DetailMateri extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              judul,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Kategori: $kategori',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Author: $author',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            Divider(color: Colors.grey),
-            SizedBox(height: 8),
-            Text(
-              konten,
-              style: TextStyle(fontSize: 16),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                judul,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Kategori: $kategori',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Author: $author',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              Divider(color: Colors.grey),
+              SizedBox(height: 8),
+              Text(
+                konten,
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
         ),
       ),
     );

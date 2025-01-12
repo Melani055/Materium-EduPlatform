@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'HomePage.dart';
 import 'RegisterPage.dart';
+import 'DataDiriPage.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key, required this.title, required void Function(ThemeMode themeMode) onThemeChange});
@@ -17,13 +18,12 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
 
-  // Nilai default untuk email dan password
-  TextEditingController emailController = TextEditingController(text: "ardi@ardi.com");
-  TextEditingController passwordController = TextEditingController(text: "Ardi1410");
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   ThemeMode _themeMode = ThemeMode.system;
-  int _themeIndex = 1; // 0 = Dark, 1 = System, 2 = Light
+  int _themeIndex = 1;
 
   Future<void> _loginWithEmailPassword() async {
     try {
@@ -31,30 +31,60 @@ class _LoginState extends State<Login> {
         email: emailController.text,
         password: passwordController.text,
       );
-      _navigateToHomePage(emailController.text);
+      _showLoginSuccessDialog();
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: ${e.message}')),
-      );
+      _showLoginFailedDialog(e.message);
     }
   }
 
   Future<void> _signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      final GoogleSignInAuthentication? googleAuth =
-      await googleUser?.authentication;
+      final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth?.accessToken,
         idToken: googleAuth?.idToken,
       );
       await _auth.signInWithCredential(credential);
-      _navigateToHomePage(_auth.currentUser!.email!);
+      _showLoginSuccessDialog();
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign-in failed: ${e.message}')),
-      );
+      _showLoginFailedDialog(e.message);
     }
+  }
+
+  void _showLoginSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Successful'),
+        content: const Text('You have successfully logged in.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _navigateToHomePage(emailController.text);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLoginFailedDialog(String? errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Failed'),
+        content: Text(errorMessage ?? 'An unknown error occurred.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _navigateToHomePage(String email) {
@@ -64,19 +94,6 @@ class _LoginState extends State<Login> {
         builder: (context) => HomePage(email: email),
       ),
     );
-  }
-
-  void _changeTheme(int index) {
-    setState(() {
-      _themeIndex = index;
-      if (index == 0) {
-        _themeMode = ThemeMode.dark;
-      } else if (index == 1) {
-        _themeMode = ThemeMode.system;
-      } else if (index == 2) {
-        _themeMode = ThemeMode.light;
-      }
-    });
   }
 
   @override
@@ -91,9 +108,9 @@ class _LoginState extends State<Login> {
             'Materium App',
             style: GoogleFonts.montserrat(
               textStyle: const TextStyle(
-                fontSize: 20, // Ukuran font
-                color: Colors.blue, // Warna biru
-                fontWeight: FontWeight.bold, // Bobot font (opsional)
+                fontSize: 20,
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -113,12 +130,21 @@ class _LoginState extends State<Login> {
                   _themeIndex == 2,
                 ],
                 onPressed: (index) {
-                  _changeTheme(index);
+                  setState(() {
+                    _themeIndex = index;
+                    if (index == 0) {
+                      _themeMode = ThemeMode.dark;
+                    } else if (index == 1) {
+                      _themeMode = ThemeMode.system;
+                    } else if (index == 2) {
+                      _themeMode = ThemeMode.light;
+                    }
+                  });
                 },
                 children: const [
-                  Icon(Icons.dark_mode), // Dark Mode
-                  Icon(Icons.settings),  // System Default
-                  Icon(Icons.light_mode), // Light Mode
+                  Icon(Icons.dark_mode),
+                  Icon(Icons.settings),
+                  Icon(Icons.light_mode),
                 ],
               ),
             ),
@@ -132,7 +158,7 @@ class _LoginState extends State<Login> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/images/logo.png', // Ganti dengan path gambar Anda
+                  'assets/images/logo.png',  // Pastikan file gambar ada di folder ini
                   width: 100,
                   height: 100,
                 ),
@@ -168,9 +194,9 @@ class _LoginState extends State<Login> {
                       labelText: "Password",
                       labelStyle: TextStyle(color: Colors.blue),
                       border: OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.blue, width: 2.0),
-                        ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blue, width: 2.0),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.blue, width: 2.0),
                       ),
@@ -184,8 +210,7 @@ class _LoginState extends State<Login> {
                   ),
                 ),
                 Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16.0),
                   child: Center(
                     child: ElevatedButton(
                       onPressed: () {
@@ -204,25 +229,27 @@ class _LoginState extends State<Login> {
                   ),
                 ),
                 Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16.0),
                   child: Center(
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.login, color: Colors.white),
+                      icon: Image.asset(
+                        'assets/images/google.png',  // Pastikan file gambar ada di folder ini
+                        width: 24,
+                        height: 24,
+                      ),
                       onPressed: _signInWithGoogle,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                        backgroundColor: Colors.white,
                       ),
                       label: const Text(
                         'Login with Google',
-                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
                   ),
                 ),
                 Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16.0),
                   child: TextButton(
                     onPressed: () {
                       Navigator.push(

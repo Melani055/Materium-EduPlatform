@@ -19,8 +19,8 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   int _themeIndex = 1;
   String userName = "Loading...";
-  String searchQuery = ""; // Variabel untuk menyimpan query pencarian
-  List<QueryDocumentSnapshot> searchResults = []; // Untuk menyimpan hasil pencarian
+  String searchQuery = "";
+  List<QueryDocumentSnapshot> searchResults = [];
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -30,7 +30,6 @@ class _HomePageState extends State<HomePage> {
     _fetchUserName();
   }
 
-  // Fungsi untuk mengambil nama pengguna berdasarkan email
   Future<void> _fetchUserName() async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -54,8 +53,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Fungsi pencarian dengan query Firestore
-// Fungsi pencarian dengan query Firestore
   Future<void> _search() async {
     setState(() {
       searchQuery = _searchController.text;
@@ -63,18 +60,16 @@ class _HomePageState extends State<HomePage> {
 
     if (searchQuery.isNotEmpty) {
       try {
-        // Menghapus filter berdasarkan email user agar bisa mencari materi dari semua user
         final results = await FirebaseFirestore.instance
             .collection('materials')
             .where('judul', isGreaterThanOrEqualTo: searchQuery)
             .where('judul', isLessThanOrEqualTo: searchQuery + '\uf8ff')
-            .get(); // Mengambil semua materi tanpa filter email
+            .get();
 
         setState(() {
           searchResults = results.docs;
         });
 
-        // Menampilkan hasil pencarian di log
         if (results.docs.isEmpty) {
           print("No results found");
         } else {
@@ -95,8 +90,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
-  // Fungsi untuk mengganti tema
   void _changeTheme(int index) {
     setState(() {
       _themeIndex = index;
@@ -110,7 +103,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Fungsi untuk mengatur bottom navigation
   void _onItemTapped(int index) {
     if (index != _selectedIndex) {
       setState(() {
@@ -212,7 +204,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _search, // Pencarian dilakukan saat tombol di klik
+                onPressed: _search,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                 ),
@@ -222,7 +214,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Menampilkan hasil pencarian
               Expanded(
                 child: ListView.builder(
                   itemCount: searchResults.length,
@@ -237,29 +228,34 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             Text("Author: ${material['author']}"),
                             Text("Kategori: ${material['kategori']}"),
-                            Text("${material['konten']}"),
+                            Text(
+                              "${material['konten']}",
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DetailMateri(
+                                      judul: material['judul'],
+                                      konten: material['konten'],
+                                      author: material['author'],
+                                      kategori: material['kategori'],
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Text("Lihat selengkapnya"),
+                            ),
                           ],
                         ),
-                        onTap: () {
-                          // Navigasi ke halaman DetailMateri dan mengirimkan data
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DetailMateri(
-                                judul: material['judul'],
-                                konten: material['konten'],
-                                author: material['author'],
-                                kategori: material['kategori'],
-                              ),
-                            ),
-                          );
-                        },
                       ),
                     );
                   },
                 ),
-              )
-
+              ),
             ],
           ),
         ),
@@ -291,4 +287,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-

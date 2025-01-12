@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 
 class AddMaterial extends StatefulWidget {
   @override
@@ -12,6 +15,44 @@ class _AddMaterialState extends State<AddMaterial> {
   final TextEditingController _kontenController = TextEditingController();
   final TextEditingController _authorController = TextEditingController();
   String? _kategori;
+  TextAlign _textAlign = TextAlign.left;
+  String? _selectedFilePath;
+
+  Future<void> _pickFile() async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('File picker tidak didukung di web'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _selectedFilePath = result.files.single.path;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tidak ada file yang dipilih'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Terjadi kesalahan: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   Future<void> _saveToFirebase() async {
     String judul = _judulController.text.trim();
@@ -36,7 +77,9 @@ class _AddMaterialState extends State<AddMaterial> {
           'konten': konten,
           'author': author,
           'kategori': _kategori,
+          'text_align': _textAlign.toString(),
           'user_email': user.email,
+          'file_path': _selectedFilePath,
           'created_at': FieldValue.serverTimestamp(),
         });
 
@@ -59,7 +102,7 @@ class _AddMaterialState extends State<AddMaterial> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Terjadi kesalahan: $e', style: TextStyle(color: Colors.white),),
+          content: Text('Terjadi kesalahan: $e', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.red,
         ),
       );
@@ -113,6 +156,44 @@ class _AddMaterialState extends State<AddMaterial> {
               },
             ),
             SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.format_align_left),
+                  onPressed: () {
+                    setState(() {
+                      _textAlign = TextAlign.left;
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.format_align_center),
+                  onPressed: () {
+                    setState(() {
+                      _textAlign = TextAlign.center;
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.format_align_right),
+                  onPressed: () {
+                    setState(() {
+                      _textAlign = TextAlign.right;
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.format_align_justify),
+                  onPressed: () {
+                    setState(() {
+                      _textAlign = TextAlign.justify;
+                    });
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
             TextField(
               controller: _kontenController,
               decoration: InputDecoration(
@@ -120,7 +201,20 @@ class _AddMaterialState extends State<AddMaterial> {
                 border: OutlineInputBorder(),
               ),
               maxLines: 6,
+              textAlign: _textAlign,
             ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _pickFile,
+              child: Text('Pilih File'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+              ),
+            ),
+            if (_selectedFilePath != null) ...[
+              SizedBox(height: 8),
+              Text('File terpilih: ${_selectedFilePath!.split('/').last}'),
+            ],
             SizedBox(height: 16),
             Center(
               child: ElevatedButton(
